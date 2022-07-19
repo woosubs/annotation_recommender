@@ -23,19 +23,22 @@ for one_k in chebi_synonyms.keys():
 class SpeciesAnnotation(object):
 
   def __init__(self, libsbml_fpath=None):
-    # self.spec_dict stores existing CHEBI annotation in the model
+    # self.exist_annotation stores existing CHEBI annotations in the model
+    # If none exists, set None
     if libsbml_fpath is not None:
       reader = libsbml.SBMLReader()
       document = reader.readSBML(libsbml_fpath)
       self.model = document.getModel()
-      species_annotations_raw = {val.getId():tools.getQualifierFromString(val.getAnnotationString(), cn.CHEBI) \
-                               for val in self.model.getListOfSpecies()}
-      species_annotations_filt = {val:species_annotations_raw[val] for val in species_annotations_raw.keys() \
-                                 if species_annotations_raw[val] is not None}
-      self.spec_dict = {k:tools.transformCHEBIToFormula(species_annotations_filt[k], ref_shortened_chebi_to_formula) \
-                        for k in species_annotations_filt.keys()}
+      exist_annotation_raw = {val.getId():tools.getQualifierFromString(val.getAnnotationString(), cn.CHEBI) \
+                        for val in self.model.getListOfSpecies()}
+      exist_annotation_filt = {val:exist_annotation_raw[val] for val in exist_annotation_raw.keys() \
+                               if exist_annotation_raw[val] is not None}
+      self.exist_annotation = {k:tools.transformCHEBIToFormula(exist_annotation_filt[k], ref_shortened_chebi_to_formula) \
+                               for k in exist_annotation_filt.keys()}
     else:
-      self.spec_dict = None
+      self.exist_annotation = None
+    # self.pred_annotation stores predicted species annotations
+    self.pred_annotation = None
       
 
   def predictSpeciesCandidatesByName(self, inp_spec_list=None):
