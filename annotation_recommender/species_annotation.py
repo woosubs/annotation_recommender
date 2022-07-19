@@ -1,26 +1,38 @@
 """Annotation for Species."""
 
 from annotation_recommender import constants as cn
+from annotation_recommender import tools
 
 import editdistance
 import libsbml
+import numpy as np
 import os
+import pickle
+
+# below might be in constants or main script
+with open(os.path.join(cn.CHEBI_DIR, 'chebi_shortened_formula_30apr2022.pickle'), 'rb') as f:
+  ref_shortened_chebi_to_formula = pickle.load(f)
+with open(os.path.join(cn.CHEBI_DIR, 'chebi_synonyms.pickle'), 'rb') as f:
+  chebi_synonyms = pickle.load(f)
+#
+chebi_low_synonyms = dict()
+for one_k in chebi_synonyms.keys():
+  chebi_low_synonyms[one_k] = list(set([val.lower() for val in chebi_synonyms[one_k]]))
 
 
 class SpeciesAnnotation(object):
 
   def __init__(self, libsbml_fpath=None):
-
+    # self.spec_dict stores existing CHEBI annotation in the model
     if libsbml_fpath is not None:
       reader = libsbml.SBMLReader()
-      document = reader.readSBML(os.path.join(BIOMODEL_DIR, one_biomd))
+      document = reader.readSBML(libsbml_fpath)
       self.model = document.getModel()
-      species_annotations_raw = {val.getId():ancil.getQualifierFromString(val.getAnnotationString(), 'chebi') \
+      species_annotations_raw = {val.getId():tools.getQualifierFromString(val.getAnnotationString(), cn.CHEBI) \
                                for val in self.model.getListOfSpecies()}
       species_annotations_filt = {val:species_annotations_raw[val] for val in species_annotations_raw.keys() \
                                  if species_annotations_raw[val] is not None}
-      # filt_species_zipped = {val[0]:val[1] for val in species_zipped if val[1] is not None}
-      self.spec_dict = {k:ancil.transformCHEBIToFormula(species_annotations_filt[k], ref_shortened_chebi_to_formula) \
+      self.spec_dict = {k:tools.transformCHEBIToFormula(species_annotations_filt[k], ref_shortened_chebi_to_formula) \
                         for k in species_annotations_filt.keys()}
     else:
       self.spec_dict = None
