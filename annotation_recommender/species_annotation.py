@@ -84,6 +84,9 @@ class SpeciesAnnotation(object):
                         if dist_dict_min[one_k]==min_min_dist and one_k in ref_shortened_chebi_to_formula.keys()]
       # predicted formula of the species
       one_result['chebi'] = min_min_chebis
+
+
+      # formul2chebi should be provided as an independent reference dictionary
       formula2chebi = dict()
       for one_chebi in min_min_chebis:
         one_itm = ref_shortened_chebi_to_formula[one_chebi]

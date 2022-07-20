@@ -12,3 +12,5 @@ CHEBI_DIR = os.path.join(DATA_DIR, "chebi")
 RHEA_DIR = os.path.join(DATA_DIR, "rhea")
 
 CHEBI = "chebi"
+RHEA = "rhea"
+KEGG_REACTION = "kegg.reaction"
