@@ -17,7 +17,7 @@ with open(os.path.join(cn.RHEA_DIR, 'kegg2rhea_bi.pickle'), 'rb') as handle:
 
 class ReactionAnnotation(object):
 
-  def __init__(self, libsbml_fpath=None, exist_qualifier='rhea'):
+  def __init__(self, libsbml_fpath=None, exist_qualifier=cn.RHEA):
     # self.exist_annotation stores 
     # existing KEGG Reaction or Rhea annotations in the model.
     # If none exists, set None.
@@ -55,3 +55,12 @@ class ReactionAnnotation(object):
       self.exist_annotation = exist_annotation
     else:
       self.exist_annotation = None
+
+
+
+
+
+
+
+
+
