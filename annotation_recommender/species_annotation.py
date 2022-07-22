@@ -36,6 +36,7 @@ class SpeciesAnnotation(object):
       self.exist_annotation = {k:tools.transformCHEBIToFormula(exist_annotation_filt[k], ref_shortened_chebi_to_formula) \
                                for k in exist_annotation_filt.keys()}
     else:
+      self.model = None
       self.exist_annotation = None
     # Below are predicted annotations;
     # Once created, each will be {species_ID: float/str-list}
@@ -44,7 +45,7 @@ class SpeciesAnnotation(object):
     self.formula = None
       
 
-  def predictAnnotationByName(self, inp_spec_list=None, inplace=True):
+  def predictAnnotationByName(self, inp_spec_list=None):
     """
     Predict list of species annotations
     using species names/IDs.
@@ -90,10 +91,10 @@ class SpeciesAnnotation(object):
       min_min_formula = list(set([ref_shortened_chebi_to_formula[val] for val in min_min_chebis]))
       one_result[cn.FORMULA] = min_min_formula
       result[one_spec_id] = one_result
-    if inplace:
-      self.match_score = {spec_id:result[spec_id][cn.MATCH_SCORE] for spec_id in result.keys()}
-      self.chebi = {spec_id:result[spec_id][cn.CHEBI] for spec_id in result.keys()}
-      self.formula = {spec_id:result[spec_id][cn.FORMULA] for spec_id in result.keys()}
+    #
+    self.match_score = {spec_id:result[spec_id][cn.MATCH_SCORE] for spec_id in result.keys()}
+    self.chebi = {spec_id:result[spec_id][cn.CHEBI] for spec_id in result.keys()}
+    self.formula = {spec_id:result[spec_id][cn.FORMULA] for spec_id in result.keys()}
     return result
 
 
