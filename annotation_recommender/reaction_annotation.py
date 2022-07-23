@@ -68,6 +68,7 @@ class ReactionAnnotation(object):
     self.match_score = None
     self.sum_match_score = None
     self.query_df = None
+    self.one_candidates = None
 
   def getMatchScore(self, inp_match_score):
     """
@@ -116,7 +117,8 @@ class ReactionAnnotation(object):
   def predictAnnotation(self,
                         inp_spec_dict,
                         inp_reac_list=None,
-                        inp_ref_mat=ref_mat):
+                        inp_ref_mat=ref_mat,
+                        update=True):
     """
     Predict 1) reaction annotation candidates 
     and 2) match score of them
@@ -129,12 +131,22 @@ class ReactionAnnotation(object):
         Dictionoary, {species id: formula(str-list)}
     inp_reac_list: str-list
         IDs of reactions to predict. If default, will do all reactions
+    inp_ref_mat: pd.DataFrame
+        Reference matrix
+    update: bool
+        Whether to save results as class attrributes or just return them.
+        If True, only match_score is returned.
+        If False, all relevant information is returned
+
       
     Returns
     -------
+    (If inplace=True)
     pred_match_score: dict
         Confidence score of each prediction
         {reaction ID: {Rhea ID: float between 0.0-1.0}}
+    (If inplace=False)
+    res_dict: dict
     """
     # get libsbml.reaction and their IDs
     if inp_reac_list is not None:
@@ -178,11 +190,46 @@ class ReactionAnnotation(object):
           num_maxpos_matches = len(inp_ref_mat.loc[one_cand, :].to_numpy().nonzero()[0])
           match_score_per_cand[one_cand] = num_matches / num_maxpos_matches
       pred_match_score[one_rid] = match_score_per_cand
-    self.candidates = pred_cands
-    self.match_score = pred_match_score
-    self.sum_match_score = self.getMatchScore(pred_match_score)
-    self.query_df = query_df
-    return pred_match_score
+    if update:
+      self.candidates = pred_cands
+      self.match_score = pred_match_score
+      self.sum_match_score = self.getMatchScore(pred_match_score)
+      self.query_df = query_df
+      self.one_candidates = self.getBestOneCandidates(self.match_score)
+      return pred_match_score
+    else:
+      return {'candidates': pred_cands,
+              'match_score': pred_match_score,
+              'sum_match_score': self.getMatchScore(pred_match_score),
+              'query_df': query_df,
+              'one_candidates': self.getBestOneCandidates(self.match_score)}
+
+
+
+  def getBestOneCandidates(self, inp_match_score=None):
+    """
+    Get a dictinoary of {reaction_id: [single candidate]}.
+    If self.predictAnnotation should have been alre
+
+    Parameters
+    ----------
+    inp_match_score: dict
+        {reaction_id: {Rhea_id: match_score(i.e., float)}}
+
+    Returns
+    -------
+    ranked_one_cands: dict
+    """
+    if inp_match_score is None:
+      match_score = self.match_score
+    else:
+      match_score = inp_match_score
+    ranked_one_cands = dict()
+    for one_k in match_score.keys():
+      one_itm = pd.DataFrame.from_dict(match_score[one_k], orient='index', columns=['match_score'])
+      one_itm.sort_values(ascending=False, by='match_score', inplace=True)
+      ranked_one_cands[one_k] = [one_itm.index[0]]
+    return ranked_one_cands
 
 
   def updateSpeciesByAReaction(self, 
