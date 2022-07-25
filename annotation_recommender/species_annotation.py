@@ -36,12 +36,16 @@ class SpeciesAnnotation(object):
       self.exist_annotation = {k:tools.transformCHEBIToFormula(exist_annotation_filt[k], ref_shortened_chebi_to_formula) \
                                for k in exist_annotation_filt.keys()}
     else:
+      self.model = None
       self.exist_annotation = None
-    # self.pred_annotation stores predicted species annotations
-    self.pred_annotation = None
+    # Below are predicted annotations;
+    # Once created, each will be {species_ID: float/str-list}
+    self.match_score = None
+    self.candidates = None
+    self.formula = None
       
 
-  def predictSpeciesCandidatesByName(self, inp_spec_list=None):
+  def predictAnnotationByName(self, inp_spec_list=None):
     """
     Predict list of species annotations
     using species names/IDs.
@@ -79,25 +83,63 @@ class SpeciesAnnotation(object):
                        for one_k in chebi_low_synonyms.keys() if one_k in ref_shortened_chebi_to_formula.keys()}
       min_min_dist = np.min([dist_dict_min[val] for val in dist_dict_min.keys()])
       one_match_score = 1 - min_min_dist/len(one_spec_name)
-      one_result['match_score'] = one_match_score
+      one_result[cn.MATCH_SCORE] = one_match_score
       min_min_chebis = [one_k for one_k in dist_dict_min.keys() \
                         if dist_dict_min[one_k]==min_min_dist and one_k in ref_shortened_chebi_to_formula.keys()]
       # predicted formula of the species
-      one_result['chebi'] = min_min_chebis
-
-
-      # formul2chebi should be provided as an independent reference dictionary
-      formula2chebi = dict()
-      for one_chebi in min_min_chebis:
-        one_itm = ref_shortened_chebi_to_formula[one_chebi]
-        if one_itm in formula2chebi.keys():
-          formula2chebi[one_itm].append(one_chebi)
-        else:
-          formula2chebi[one_itm] = [one_chebi]
-      one_result['formula2chebi'] = formula2chebi
-    
-      min_min_formula = list(formula2chebi.keys())
-      one_result['formula'] = min_min_formula
+      one_result[cn.CHEBI] = min_min_chebis
+      min_min_formula = list(set([ref_shortened_chebi_to_formula[val] for val in min_min_chebis]))
+      one_result[cn.FORMULA] = min_min_formula
       result[one_spec_id] = one_result
+    #
+    self.match_score = {spec_id:result[spec_id][cn.MATCH_SCORE] for spec_id in result.keys()}
+    self.candidates = {spec_id:result[spec_id][cn.CHEBI] for spec_id in result.keys()}
+    self.formula = {spec_id:result[spec_id][cn.FORMULA] for spec_id in result.keys()}
     return result
+
+
+  def getAccuracy(self,
+                  ref_annotation=None,
+                  pred_annotation=None):
+    """
+    Compute accuracy of species annotation.
+    A list of annotations of 
+    a single species (identified by each ID) 
+    is considered accurate if it includes
+    the corresponding value of ref_annotation.
+    (More precisely, if there is at least one
+    intersection).
+  
+    Parameters
+    ----------
+    ref_annotation: dict
+        {species_id: [str-annotation]}
+        if None, get self.exist_annotation
+    pred_annotation: dict
+        {species_id: [str-annotation]}
+        if None, get self.candidates
+
+    Returns
+    -------
+    : float
+    """
+    accuracy = []
+    if ref_annotation is None:
+      ref = self.exist_annotation
+    else:
+      ref = ref_annotation
+    if pred_annotation is None:
+      pred = self.formula
+    else:
+      pred = pred_annotation
+    ref_keys = set(ref.keys())
+    pred_keys = set(pred.keys())
+    species_to_test = ref_keys.intersection(pred_keys)
+    for one_k in species_to_test:
+      if set(ref[one_k]).intersection(pred[one_k]):
+        accuracy.append(True)
+      else:
+        accuracy.append(False)
+    return np.mean(accuracy)
+
 

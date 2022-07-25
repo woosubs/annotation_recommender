@@ -83,3 +83,45 @@ def transformCHEBIToFormula(inp_list, ref_to_formula_dict):
                   if val in ref_to_formula_dict.keys()]
   res = list(set([val for val in inp_formulas if val is not None]))
   return res
+
+
+def updateDictKeyToList(inp_orig_dict, inp_new_dict):
+  """
+  Update inp_orig_dict using inp_up_dict.
+  If key of inp_up_dict is already in inp_orig_dict,
+  simply append the item list, 
+  otherwise create a new list with a single item. 
+  
+  Parameters
+  ----------
+  inp_orig_dict: dict
+      {key: [items]}
+  inp_new_dict: dict
+      {key: [items]} / {key: item}
+      
+  Returns
+  -------
+  res_dict: dict
+      {key: [list of items]}
+  """
+  res_dict = inp_orig_dict.copy()
+  # If nothing to update; return original dictionary
+  if inp_new_dict is None:
+    return res_dict
+  for one_k in inp_new_dict.keys():
+    # make item to a list, it is already not
+    if isinstance(inp_new_dict[one_k], list):
+      itm2add = inp_new_dict[one_k]
+    else:
+      itm2add = [inp_new_dict[one_k]]
+    if one_k in res_dict.keys():
+      res_dict[one_k] = list(set(res_dict[one_k] + itm2add))
+    else:
+      res_dict[one_k] = itm2add
+  return res_dict
+
+
+
+
+
+  
