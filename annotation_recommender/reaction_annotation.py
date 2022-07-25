@@ -234,7 +234,7 @@ class ReactionAnnotation(object):
 
   def updateSpeciesByAReaction(self, 
                                inp_rid, inp_spec_dict,
-                               inp_rhea, inp_ref_mat):
+                               inp_rhea, inp_ref_mat=ref_mat):
     """
     Update predicted species annotation
     using predicted rhea annotation candidate
@@ -301,3 +301,49 @@ class ReactionAnnotation(object):
       return {remaining_specid[0]: [remaining_chebi[0]]}
     else:
       None
+
+  def getAccuracy(self,
+                  ref_annotation=None,
+                  pred_annotation=None):
+    """
+    Compute accuracy of species annotation.
+    A list of annotations of 
+    a single reaaction (identified by each ID) 
+    is considered accurate if it includes
+    the corresponding value of ref_annotation.
+    (More precisely, if there is at least one
+    intersection).
+  
+    Parameters
+    ----------
+    ref_annotation: dict
+        {reaction_id: [str-annotation]}
+        if None, get self.exist_annotation
+    pred_annotation: dict
+        {reaction_id: [str-annotation]}
+        if None, get self.candidates
+
+
+    Returns
+    -------
+    : float
+    """
+    accuracy = []
+    if ref_annotation is None:
+      ref = self.exist_annotation
+    else:
+      ref = ref_annotation
+    if pred_annotation is None:
+      pred = self.candidates
+    else:
+      pred = pred_annotation
+    ref_keys = set(ref.keys())
+    pred_keys = set(pred.keys())
+    reactions_to_test = ref_keys.intersection(pred_keys)
+    for one_k in reactions_to_test:
+      if set(ref[one_k]).intersection(pred[one_k]):
+        accuracy.append(True)
+      else:
+        accuracy.append(False)
+    return np.mean(accuracy)
+

@@ -41,7 +41,7 @@ class SpeciesAnnotation(object):
     # Below are predicted annotations;
     # Once created, each will be {species_ID: float/str-list}
     self.match_score = None
-    self.chebi = None
+    self.candidates = None
     self.formula = None
       
 
@@ -93,10 +93,53 @@ class SpeciesAnnotation(object):
       result[one_spec_id] = one_result
     #
     self.match_score = {spec_id:result[spec_id][cn.MATCH_SCORE] for spec_id in result.keys()}
-    self.chebi = {spec_id:result[spec_id][cn.CHEBI] for spec_id in result.keys()}
+    self.candidates = {spec_id:result[spec_id][cn.CHEBI] for spec_id in result.keys()}
     self.formula = {spec_id:result[spec_id][cn.FORMULA] for spec_id in result.keys()}
     return result
 
 
+  def getAccuracy(self,
+                  ref_annotation=None,
+                  pred_annotation=None):
+    """
+    Compute accuracy of species annotation.
+    A list of annotations of 
+    a single species (identified by each ID) 
+    is considered accurate if it includes
+    the corresponding value of ref_annotation.
+    (More precisely, if there is at least one
+    intersection).
+  
+    Parameters
+    ----------
+    ref_annotation: dict
+        {species_id: [str-annotation]}
+        if None, get self.exist_annotation
+    pred_annotation: dict
+        {species_id: [str-annotation]}
+        if None, get self.candidates
+
+    Returns
+    -------
+    : float
+    """
+    accuracy = []
+    if ref_annotation is None:
+      ref = self.exist_annotation
+    else:
+      ref = ref_annotation
+    if pred_annotation is None:
+      pred = self.formula
+    else:
+      pred = pred_annotation
+    ref_keys = set(ref.keys())
+    pred_keys = set(pred.keys())
+    species_to_test = ref_keys.intersection(pred_keys)
+    for one_k in species_to_test:
+      if set(ref[one_k]).intersection(pred[one_k]):
+        accuracy.append(True)
+      else:
+        accuracy.append(False)
+    return np.mean(accuracy)
 
 
