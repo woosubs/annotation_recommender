@@ -45,17 +45,57 @@ class SpeciesAnnotation(object):
     self.formula = None
       
 
-  def predictAnnotationByName(self, inp_spec_list=None):
+  def predictAnnotationByEditDistance(self, inp_str):
+    """
+    Predict annotation using the argument string 
+    and Levenshtein edit distance method. 
+
+    Parameters
+    ----------
+    inp_str: str
+        String to predict CHEBI annotation
+
+    Returns
+    -------
+    one_result: dict
+        {key: value(s)}
+        'key' can be match_score, chebi, etc. 
+    """
+    one_result = dict()
+    # For now, choose the terms that are included in the CHEBI-formula mapping reference
+    dist_dict_min = {one_k:np.min([editdistance.eval(inp_str.lower(), val) for val in chebi_low_synonyms[one_k]]) \
+                     for one_k in chebi_low_synonyms.keys() if one_k in ref_shortened_chebi_to_formula.keys()}
+    min_min_dist = np.min([dist_dict_min[val] for val in dist_dict_min.keys()])
+    one_match_score = 1 - min_min_dist/len(inp_str)
+    one_result[cn.MATCH_SCORE] = one_match_score
+    min_min_chebis = [one_k for one_k in dist_dict_min.keys() \
+                      if dist_dict_min[one_k]==min_min_dist and one_k in ref_shortened_chebi_to_formula.keys()]
+    # predicted formula of the species
+    one_result[cn.CHEBI] = min_min_chebis
+    min_min_formula = list(set([ref_shortened_chebi_to_formula[val] for val in min_min_chebis]))
+    one_result[cn.FORMULA] = min_min_formula
+    return one_result
+
+
+  def predictAnnotationByName(self, inp_spec_list=None,
+                              specnames_dict=None,
+                              update=True):
     """
     Predict list of species annotations
     using species names/IDs.
     Rule is 1) use species name, 
     2) if not provided, use species ID.
+
+    Alternatively, user can directly predict annotations
+    without incurring libsbml model methods,
+    by using specnames_dict.
   
     Parameters
     ----------
     inp_spec_list: str-list (or iterable list of strings)
         List of species IDs to extract names
+    specnames_dict: dict
+        {spec_id: spec_name(str)}
 
     Returns
     -------
@@ -68,33 +108,40 @@ class SpeciesAnnotation(object):
                   }
         match_score is expected to be between 0.0-1.0
     """
-    result = dict()
-    if inp_spec_list is None:
-      spec_list = [val.getId() for val in self.model.getListOfSpecies()]
+    if specnames_dict is None:
+      result = dict()
+      # If no list if given, predict all elements' annotations
+      if inp_spec_list is None:
+        spec_list = [val.getId() for val in self.model.getListOfSpecies()]
+      else:
+        spec_list = inp_spec_list
+      for one_spec_id in spec_list:
+        one_spec_name = self.model.getSpecies(one_spec_id).name.lower()
+        if len(one_spec_name) == 0:
+          one_spec_name = one_spec_id.lower()
+        result[one_spec_id] = self.predictAnnotationByEditDistance(inp_str=one_spec_name)
     else:
-      spec_list = inp_spec_list
-    for one_spec_id in spec_list:
-      one_result = dict()
-      one_spec_name = self.model.getSpecies(one_spec_id).name.lower()
-      if len(one_spec_name) == 0:
-        one_spec_name = one_spec_id.lower()
-      # For now, choose the terms that are included in the CHEBI-formula mapping reference
-      dist_dict_min = {one_k:np.min([editdistance.eval(one_spec_name, val) for val in chebi_low_synonyms[one_k]]) \
-                       for one_k in chebi_low_synonyms.keys() if one_k in ref_shortened_chebi_to_formula.keys()}
-      min_min_dist = np.min([dist_dict_min[val] for val in dist_dict_min.keys()])
-      one_match_score = 1 - min_min_dist/len(one_spec_name)
-      one_result[cn.MATCH_SCORE] = one_match_score
-      min_min_chebis = [one_k for one_k in dist_dict_min.keys() \
-                        if dist_dict_min[one_k]==min_min_dist and one_k in ref_shortened_chebi_to_formula.keys()]
-      # predicted formula of the species
-      one_result[cn.CHEBI] = min_min_chebis
-      min_min_formula = list(set([ref_shortened_chebi_to_formula[val] for val in min_min_chebis]))
-      one_result[cn.FORMULA] = min_min_formula
-      result[one_spec_id] = one_result
+      result = {val:self.predictAnnotationByEditDistance(inp_str=specnames_dict[val]) \
+                for val in specnames_dict.keys()}
+      # one_result = dict()
+      # # For now, choose the terms that are included in the CHEBI-formula mapping reference
+      # dist_dict_min = {one_k:np.min([editdistance.eval(one_spec_name, val) for val in chebi_low_synonyms[one_k]]) \
+      #                  for one_k in chebi_low_synonyms.keys() if one_k in ref_shortened_chebi_to_formula.keys()}
+      # min_min_dist = np.min([dist_dict_min[val] for val in dist_dict_min.keys()])
+      # one_match_score = 1 - min_min_dist/len(one_spec_name)
+      # one_result[cn.MATCH_SCORE] = one_match_score
+      # min_min_chebis = [one_k for one_k in dist_dict_min.keys() \
+      #                   if dist_dict_min[one_k]==min_min_dist and one_k in ref_shortened_chebi_to_formula.keys()]
+      # # predicted formula of the species
+      # one_result[cn.CHEBI] = min_min_chebis
+      # min_min_formula = list(set([ref_shortened_chebi_to_formula[val] for val in min_min_chebis]))
+      # one_result[cn.FORMULA] = min_min_formula
+      
     #
-    self.match_score = {spec_id:result[spec_id][cn.MATCH_SCORE] for spec_id in result.keys()}
-    self.candidates = {spec_id:result[spec_id][cn.CHEBI] for spec_id in result.keys()}
-    self.formula = {spec_id:result[spec_id][cn.FORMULA] for spec_id in result.keys()}
+    if update:
+      self.match_score = {spec_id:result[spec_id][cn.MATCH_SCORE] for spec_id in result.keys()}
+      self.candidates = {spec_id:result[spec_id][cn.CHEBI] for spec_id in result.keys()}
+      self.formula = {spec_id:result[spec_id][cn.FORMULA] for spec_id in result.keys()}
     return result
 
 
