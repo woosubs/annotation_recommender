@@ -207,7 +207,6 @@ class ReactionAnnotation(object):
               'one_candidates': self.getBestOneCandidates(self.match_score)}
 
 
-
   def getBestOneCandidates(self, inp_match_score=None):
     """
     Get a dictinoary of {reaction_id: [single candidate]}.
