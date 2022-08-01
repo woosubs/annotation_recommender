@@ -59,6 +59,8 @@ class ReactionAnnotation(object):
       for one_id in reac_dict_kegg.keys():
         if one_id in exist_annotation.keys():
           exist_annotation[one_id] = list(set(exist_annotation[one_id] + reac_dict_kegg[one_id]))
+        else:
+          exist_annotation[one_id] = list(set(reac_dict_kegg[one_id]))
       self.exist_annotation = exist_annotation
     else:
       self.model = None
@@ -203,7 +205,6 @@ class ReactionAnnotation(object):
               'sum_match_score': self.getMatchScore(pred_match_score),
               'query_df': query_df,
               'one_candidates': self.getBestOneCandidates(self.match_score)}
-
 
 
   def getBestOneCandidates(self, inp_match_score=None):
