@@ -220,6 +220,7 @@ class ReactionAnnotation(object):
     Returns
     -------
     ranked_one_cands: dict
+        {reaction_id: [one Rhea_id]}
     """
     if inp_match_score is None:
       match_score = self.match_score
