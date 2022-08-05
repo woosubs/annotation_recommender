@@ -54,9 +54,6 @@ class TestReactionAnnotation(unittest.TestCase):
     self.assertEqual(COMPONENTS, set(two_comps))
 
   def testPredictAnnotation(self):
-    # pred_species = self.spec_cl.predictAnnotationByName(inp_spec_list=COMPONENTS)
-    # pred_reaction = self.reac_cl.predictAnnotation(inp_spec_dict=self.spec_cl.formula,
-    #                                                inp_reac_list=[R_PFK])
     self.assertTrue(ONE_CANDIDATE in self.reac_cl.match_score[R_PFK])
     self.assertEqual(self.reac_cl.match_score[R_PFK][ONE_CANDIDATE],
                      0.8)
@@ -67,9 +64,6 @@ class TestReactionAnnotation(unittest.TestCase):
     self.assertEqual(self.reac_cl.getBestOneCandidates(one_match_score)['R1'],
                      ['RHEA:2'])
     # When argument is not given
-    # pred_species = self.spec_cl.predictAnnotationByName(inp_spec_list=COMPONENTS)
-    # pred_reaction = self.reac_cl.predictAnnotation(inp_spec_dict=self.spec_cl.formula,
-    #                                                inp_reac_list=[R_PFK])
     self.assertEqual(self.reac_cl.getBestOneCandidates()[R_PFK],
                      [ONE_CANDIDATE])
 
@@ -80,8 +74,9 @@ class TestReactionAnnotation(unittest.TestCase):
     self.assertEqual(chebi2update[ATP], [ONE_CHEBI])
 
 
-
-
+  def testGetAccuracy(self):
+    pred = {R_PFK: ['RHEA:16112']}
+    self.assertEqual(self.reac_cl.getAccuracy(pred_annotation=pred), 1.0)
 
 
 
