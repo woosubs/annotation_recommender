@@ -3,7 +3,49 @@
 import re
 
 
-def getOntologyFromString(string_annotation):
+# def getOntologyFromString(string_annotation):
+#   """
+#   Parse string and return string annotation,
+#   marked as <bqbiol:is> or <bqbiol:isVersionOf>.
+#   If neither exists, return None.
+
+#   Parameters
+#   ----------
+#   str: string_annotation
+
+#   Returns
+#   -------
+#   list-tuple (ontology type, ontology id)
+#        Return [] if none is provided
+#   """
+#   # first, extracts strings tagged as bqbiol:is or bqbiol:isVersionOf.
+#   is_str = ''
+#   isVersionOf_str = ''
+#   is_str_match = re.findall('<bqbiol:is[^a-zA-Z].*?<\/bqbiol:is>',
+#                             string_annotation,
+#                             flags=re.DOTALL)
+#   if len(is_str_match)>0:
+#     is_str_match_filt = [s.replace("      ", "") for s in is_str_match]
+#     is_str = '\n'.join(is_str_match_filt)  
+#   #
+#   is_VersionOf_str_match = re.findall('<bqbiol:isVersionOf[^a-zA-Z].*?<\/bqbiol:isVersionOf>',
+#                                       string_annotation,
+#                                       flags=re.DOTALL)  
+#   #
+#   if len(is_VersionOf_str_match) > 0:
+#     is_VersionOf_str_match_filt = [s.replace("      ", "") for s in is_VersionOf_str_match]
+#     isVersionOf_str = '\n'.join(is_VersionOf_str_match_filt) 
+#   #
+#   combined_str = is_str + isVersionOf_str
+#   if combined_str == '':
+#     return []
+#   identifiers_list = re.findall('identifiers\.org/.*/', combined_str)
+#   return [(r.split('/')[1],r.split('/')[2].replace('\"', '')) \
+#           for r in identifiers_list]
+
+
+def getOntologyFromString(string_annotation,
+                          bqbiol_qualifiers=['is', 'isVersionOf']):
   """
   Parse string and return string annotation,
   marked as <bqbiol:is> or <bqbiol:isVersionOf>.
@@ -11,37 +53,35 @@ def getOntologyFromString(string_annotation):
 
   Parameters
   ----------
-  str: string_annotation
+  string_annotation: str
+  bqbiol_qualifiers: str-list
+      Use 'is' and 'isVersionOf' by default
+  
 
   Returns
   -------
   list-tuple (ontology type, ontology id)
        Return [] if none is provided
   """
-  # first, extracts strings tagged as bqbiol:is or bqbiol:isVersionOf.
-  is_str = ''
-  isVersionOf_str = ''
-  is_str_match = re.findall('<bqbiol:is[^a-zA-Z].*?<\/bqbiol:is>',
-                            string_annotation,
-                            flags=re.DOTALL)
-  if len(is_str_match)>0:
-    is_str_match_filt = [s.replace("      ", "") for s in is_str_match]
-    is_str = '\n'.join(is_str_match_filt)  
-  #
-  is_VersionOf_str_match = re.findall('<bqbiol:isVersionOf[^a-zA-Z].*?<\/bqbiol:isVersionOf>',
-                                      string_annotation,
-                                      flags=re.DOTALL)  
-  #
-  if len(is_VersionOf_str_match) > 0:
-    is_VersionOf_str_match_filt = [s.replace("      ", "") for s in is_VersionOf_str_match]
-    isVersionOf_str = '\n'.join(is_VersionOf_str_match_filt) 
-  #
-  combined_str = is_str + isVersionOf_str
-  if combined_str == '':
-    return []
+  combined_str = ''
+  for one_qualifier in bqbiol_qualifiers:
+    one_match = '<bqbiol:' + one_qualifier + \
+                '[^a-zA-Z].*?<\/bqbiol:' + \
+                one_qualifier + '>'
+    one_matched = re.findall(one_match,
+                  string_annotation,
+                  flags=re.DOTALL)
+    if len(one_matched)>0:
+      matched_filt = [s.replace("      ", "") for s in one_matched]
+      one_str = '\n'.join(matched_filt) 
+    else:
+      one_str = ''
+    combined_str = combined_str + one_str
   identifiers_list = re.findall('identifiers\.org/.*/', combined_str)
-  return [(r.split('/')[1],r.split('/')[2].replace('\"', '')) \
-          for r in identifiers_list]
+  result_identifiers = [(r.split('/')[1],r.split('/')[2].replace('\"', '')) \
+                        for r in identifiers_list]
+  return result_identifiers
+
 
 def getQualifierFromString(input_str, qualifier):
   """
